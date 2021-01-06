@@ -244,47 +244,26 @@ label * LI_listLabels(listItem * pTmp){
 	{
 		printf("Checking for label: %s\n", pTmp->pLine);
 		
+		char * pLabel = strstr(pTmp->pLine, "#label:");
+		if(pLabel)
+		{
+			int iFirstSemicolon = charIndex(pTmp->pLine, ':');
+			if(iFirstSemicolon > 0)
+			{
+				int iSecondSemicolon = charIndex(&pTmp->pLine[iFirstSemicolon+1], ':');
+				if(iSecondSemicolon > 0)
+				{
+					char fileName[BUFF_SIZE];
+					memset(fileName, 0, BUFF_SIZE);
+					strncpy(fileName, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
+					printf("File found: %s\n", fileName);
+					
+				}
+			}
+		}
 		pTmp = pTmp->pNext;
 	}
 
 	return labels;
 }
 
-
-// TODO: this funct doesnt work. rest should be ok;
-/*listItem * LI_findLabel_old(listItem * pTmp, char * label)
-{
-	int filesFound = 0;
-
-	if(pTmp == NULL){
-		return 0;
-	}
-	while(pTmp != NULL)
-	{
-		char * pIncl = strstr(pTmp->pLine, "#include:");
-		if(pIncl)
-		{
-			int iFirstSemicolon = charIndex(pTmp->pLine, ':');
-			if(iFirstSemicolon > 0)
-			{
-				int iSecondSemicolon = charIndex(&pTmp->pLine[iFirstSemicolon+1], ':');
-				if(iFirstSemicolon > 0)
-				{
-					char labelName[BUFF_SIZE];
-					memset(labelName, 0, BUFF_SIZE);
-					strncpy(labelName, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
-					printf("Label found: %s\n", labelName);
-					
-					if(strcmp(labelName, label) == 0)
-					{
-						return pTmp;
-					}
-				}
-			}
-			filesFound++;
-		}
-		
-		pTmp = pTmp->pNext;
-	}
-	return NULL;
-}*/
