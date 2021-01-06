@@ -8,6 +8,12 @@ typedef struct listItem
 	char * pLine;
 }listItem;
 
+typedef struct label
+{
+	char name[255];// TODO size
+	listItem * location;
+}label;
+
 listItem * LI_create(char * strLine);
 void LI_free(listItem * item);
 int LI_length(listItem * pTmp);
@@ -18,7 +24,8 @@ void LI_remove(listItem * pTmp);
 listItem * LI_load(char * strFile);
 int charIndex(char * str, char ch);
 int LI_processIncludes(listItem * pTmp);
-listItem * LI_findLabel(listItem * pTmp, char * label);
-int main(int argc, char * argv[]);
+//listItem * LI_findLabel(listItem * pTmp, char * label);
+label * LI_listLabels(listItem * pTmp);
+//int main(int argc, char * argv[]);
 
 #endif

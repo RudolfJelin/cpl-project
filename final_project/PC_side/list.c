@@ -11,6 +11,12 @@ typedef struct listItem
 	char * pLine;
 }listItem;
 
+typedef struct label
+{
+	char name[BUFF_SIZE];
+	listItem * location;
+}label;
+
 listItem * LI_create(char * strLine)
 {
 	listItem * p = (listItem *)malloc(sizeof(listItem));
@@ -22,7 +28,7 @@ listItem * LI_create(char * strLine)
 	p->pNext = NULL;
 	p->pLine = NULL;
 	
-	int len = strlen(strLine)-1; // -1 to remove trailing newline. Will be replaced with /r/n
+	int len = strlen(strLine); // TODO ?? -1 to remove trailing newline. Will be replaced with /r/n
 	p->pLine = (char *) malloc(len+1); // to include \0
 	if(p->pLine == NULL){
 		free(p); // can be replaced with LI_free
@@ -72,7 +78,7 @@ void LI_print(listItem * pTmp)
 {
 	while(pTmp != NULL)
 	{
-		printf("LI: %s", pTmp->pLine);
+		printf("LI: %s\n", pTmp->pLine);
 		pTmp = pTmp->pNext;
 	}
 }
@@ -97,14 +103,33 @@ void LI_remove(listItem * pTmp)
 
 }
 
+int uncomment(char * line)
+{
+	int isComment = 0;
+	int len = strlen(line);
+	for(int i = 1; i < len; i++){ // strip end of line of garbage
+		if (line[i-1] == '/' && line[i] == '/'){
+			isComment = 1; // remove rest of line
+			line[i-1] = 0;
+		}
+		if(line[i] == 0x0a || line[i] == 0x0d || line[i] == 0 || isComment){
+			line[i] = 0;
+		}	
+	}
+	return strlen(line);
+}
+
 listItem * LI_load(char * strFile)
 {	
+	printf("LI_load: %s\n", strFile);
+
 	listItem * firstItem;
 	listItem * pTmp;
 	listItem * pNew;
 
 	FILE * pFile = fopen(strFile, "r");
 	if(pFile == NULL){
+		fprintf(stderr, "Error: invalid file!\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -115,10 +140,21 @@ listItem * LI_load(char * strFile)
 	int i = 0;
 	while( (read = getline(&line, &len, pFile)) != -1)
 	{
+		len = uncomment(line);
+		
 		if(len < 2){
-			continue;
+			continue; // line was either empty or a comment
 		}
-		line[len-2] = 0; // \r\n
+		
+		//line[len-1] = 0; // \r\n
+		printf(">> Loaded file line: '%s'\n", line);
+			printf("   Line: \"");
+			char * hex = line;
+			while(*hex){
+				printf("%02x ", *hex);
+				hex++;
+			}
+			printf("\"\n");
 		
 		pNew = LI_create(line);
 		if(i == 0){
@@ -166,7 +202,7 @@ int LI_processIncludes(listItem * pTmp)
 			if(iFirstSemicolon > 0)
 			{
 				int iSecondSemicolon = charIndex(&pTmp->pLine[iFirstSemicolon+1], ':');
-				if(iFirstSemicolon > 0)
+				if(iSecondSemicolon > 0)
 				{
 					char fileName[BUFF_SIZE];
 					memset(fileName, 0, BUFF_SIZE);
@@ -197,8 +233,26 @@ int LI_processIncludes(listItem * pTmp)
 	return filesFound;
 }
 
+label * LI_listLabels(listItem * pTmp){
+	if(pTmp == NULL){
+		return NULL;
+	}
+	
+	label labels[10];
+	int labelsFound = 0;
+	while(pTmp != NULL)
+	{
+		printf("Checking for label: %s\n", pTmp->pLine);
+		
+		pTmp = pTmp->pNext;
+	}
+
+	return labels;
+}
+
+
 // TODO: this funct doesnt work. rest should be ok;
-listItem * LI_findLabel(listItem * pTmp, char * label)
+/*listItem * LI_findLabel_old(listItem * pTmp, char * label)
 {
 	int filesFound = 0;
 
@@ -233,4 +287,4 @@ listItem * LI_findLabel(listItem * pTmp, char * label)
 		pTmp = pTmp->pNext;
 	}
 	return NULL;
-}
+}*/

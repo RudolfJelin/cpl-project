@@ -1,0 +1,64 @@
+// Intro 
+#label:LabelIntro://testing comments
+#include:intro.txt:
+#goto:LabelSplash:
+
+#label:LabelSplash:
+// splash contains faulty command
+#include:splash.txt:
+#wait_for_joystick:8000:8:
+#if:JOY_SEL:goto:LabelLedOn:
+#if:JOY_DOWN:goto:LabelLedOff:
+#else:goto:LabelMain:
+
+#label:LabelExit:
+DRAW:CLEAR 9
+DRAW:SETTEXTCOLOR 1 
+DRAW:SETFONT 16
+DRAW:TEXT 64,120,Bye, bye!,1
+#exit:
+
+#label:LabelLedOn:
+DRAW:CLEAR 4
+DRAW:SETFONT 20
+DRAW:TEXT 64,120,Led is ON,1
+LED ON
+#wait_for_joystick:2000:8:
+#if:JOY_SEL:goto:LabelIntro:
+#else:goto:LabelMain:
+
+#label:LabelLedOff:
+DRAW:CLEAR 4
+DRAW:SETFONT 20
+DRAW:TEXT 64,120,Led is OFF,1
+LED OFF
+#wait_for_joystick:2000:8:
+#if:JOY_SEL:goto:LabelIntro:
+#else:goto:LabelMain:
+
+#label:LabelMain:
+DRAW:CLEAR 2
+DRAW:SETTEXTCOLOR 3 
+DRAW:CIRCLE 49,20,10
+DRAW:CIRCLE 79,20,10
+DRAW:SETTEXTCOLOR 2 
+DRAW:LINE 55,40,60,45 
+DRAW:LINE 68,45,73,40 
+DRAW:LINE 60,45,68,45 
+DRAW:SETFONT 12
+DRAW:TEXT 64,120,Nucleo RULEZ!,1
+DRAW:TEXT 64,140,Press Left or Right,1
+DRAW:TEXT 64,160,or Down to Exit!,1
+#wait_for_joystick:
+#if:JOY_LEFT:goto:LabelLeft:
+#if:JOY_RIGHT:goto:LabelRight:
+#if:JOY_DOWN:goto:LabelExit:
+#else:goto:LabelIntro:
+
+#label:LabelLeft:
+DRAW:CLEAR 4
+DRAW:SETFONT 20
+DRAW:SETTEXTCOLOR 3
+DRAW:TEXT 64,120,Left,1
+#wait_for_joystick:2000:8:
+#else:goto:LabelIntro:

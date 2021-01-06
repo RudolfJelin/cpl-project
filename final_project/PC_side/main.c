@@ -19,7 +19,8 @@ char * menu[] =
 	{
 	"Item 'o': LED ON",
 	"Item 'f': LED OFF",
-	"Item 'b': BUTT:STATE",
+	"Item 'b': BUTTON STATE",
+	"Item 'j': Last Joystick action",
 	"Item 'm': Send File",
 	"Item c: Enter a custom command",
 	"Item e: Exit"
@@ -44,8 +45,17 @@ char chBuffOut[BUFFER_SIZE];
 char chBuffIn[BUFFER_SIZE];
 int hSerial;
 
+int joy_state = 0;
+char joystick[6][10] = {"JOY_NONE", "JOY_UP", "JOY_DOWN", "JOY_LEFT", "JOY_RIGHT", "JOY_SEL"};
+#define JOY_NONE 0
+#define JOY_UP 1
+#define JOY_DOWN 2
+#define JOY_LEFT 3
+#define JOY_RIGHT 4
+#define JOY_SEL 5
+
 pthread_mutex_t mtx;
-mthread_cond_t condvar;
+pthread_cond_t condvar;
 
 void printSelection(char * str)
 {
@@ -65,7 +75,7 @@ void printSelection(char * str)
 			}
 		}
 	}
-	printf("\r%s\n", strLine); // unfortunately printing to stderr will not be nicely formatted
+	printf("\r%s\n", strLine); // unfortunately printing to stderr will not be nicely formatted, also TODO remove newline?
 }
 
 void printMenu(char* selection)
@@ -92,7 +102,6 @@ void send_string(int hSerial, char * strOut)
 	
 	printf("Sending: \"");
 	char * hex = chBuffOut;
-	//hex[strlen(hex)-1] = 0;
 	while(*hex){
 		printf("%02x ", *hex);
 		serial_write(hSerial, hex, 1);
@@ -102,15 +111,23 @@ void send_string(int hSerial, char * strOut)
 	printf("\"\n");
 }
 
-// loads file line by line, then sends it. Can be reworked into a thread.
-void send_file(int hSerial)
+// loads file line by line, then sends it. Is only accessed by a threaad
+void send_file(int hSerial) // TODO tO process includes and simmilar
 {
 	printf("Sending file '%s'\n", fileName);
 
 	listItem * firstItem;
 	firstItem = LI_load(fileName);
-	listItem * pTmp = firstItem;
+	//LI_print(firstItem);
 	
+	int filesFound = LI_processIncludes(firstItem);
+	printf("Found files to include: %d\n", filesFound);
+	
+	label * labelList = LI_listLabels(firstItem);
+	
+	LI_print(firstItem);
+	
+	listItem * pTmp = firstItem;
 	while(pTmp != NULL)
 	{
 		send_string(hSerial, pTmp->pLine);
@@ -122,7 +139,7 @@ void send_file(int hSerial)
 }
 
 void load_file(int hSerial){
-	// loads entire file and sends it; TODO
+	// loads filename; TODO
 	printf("\nEnter filename: ");
 	scanf("%s", fileName);
 	//send_file(hSerial);
@@ -179,13 +196,28 @@ void* comm(void *v)
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_DOWN") == pSerialData->chCmdBuff)
 						{
 							printf("Nucleo requested LCD clear\n");
+							joy_state = JOY_DOWN;
 							send_string(pSerialData->hSerial, "DRAW:CLEAR 9");
-							
 						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_SEL") == pSerialData->chCmdBuff)
 						{
 							printf("Nucleo requested resend\n");
-							send_file(pSerialData->hSerial);
+							joy_state = JOY_SEL;
+							//send_file(pSerialData->hSerial);TODO check if this part is correct
+							//this instead:
+							pthread_cond_signal(&condvar);
+						}
+						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_UP") == pSerialData->chCmdBuff)
+						{
+							joy_state = JOY_UP;
+						}
+						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_LEFT") == pSerialData->chCmdBuff)
+						{
+							joy_state = JOY_LEFT;
+						}
+						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_RIGHT") == pSerialData->chCmdBuff)
+						{
+							joy_state = JOY_RIGHT;
 						}
 						else if(strstr(pSerialData->chCmdBuff, "BUTTON 0") == pSerialData->chCmdBuff)
 						{
@@ -208,8 +240,6 @@ void* comm(void *v)
 	return 0;
 }
 
-
-
 // a separate thread for sending files
 void* send(void *v) 
 {
@@ -228,18 +258,21 @@ void* send(void *v)
 	{
 		pthread_mutex_lock(&mtx);
 		
+		printf("> thread waiting at line 231\n");
 		pthread_cond_wait(&condvar, &mtx);
 		
-		if(fileName == NULL){
+		if(fileName[0] == 0){
 			fprintf(stderr,"Error: No filename specified");
 			return 0;
 		}
+		else if(!quit){ // otherwise thread end runs this once more	
+			send_file(hSerial);
+		}
 		
-		send_file(hSerial);
-		
+		q = quit;
+		printf("> thread at end of loop\n");
 		
 		pthread_mutex_unlock(&mtx);
-		q = quit;
 		usleep(10);
 	}
 	return 0;
@@ -321,7 +354,7 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 
-			case 'm': // load file prototype
+			case 'm': // load file prototype, evaluate and send
 				{	
 					load_file(hSerial);
 					//send_file(hSerial);
@@ -330,7 +363,15 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 
-			case 'c': // sends a string from stdin
+			case 'j': // output last joystick state
+				{	
+					
+					printf("Last joystick state: %s\n", joystick[joy_state]);
+					
+					break;
+				}
+
+			case 'c': // sends a string from stdin, without thread
 				{	
 					printf("Enter command: ");
 					char command[BUFFER_SIZE];
