@@ -44,6 +44,9 @@ char chBuffOut[BUFFER_SIZE];
 char chBuffIn[BUFFER_SIZE];
 int hSerial;
 
+pthread_mutex_t mtx;
+mthread_cond_t condvar;
+
 void printSelection(char * str)
 {
 	char strLine[] = "Enter option: ";//"\rInfo:                          | Enter option: ";
@@ -122,7 +125,7 @@ void load_file(int hSerial){
 	// loads entire file and sends it; TODO
 	printf("\nEnter filename: ");
 	scanf("%s", fileName);
-	send_file(hSerial);
+	//send_file(hSerial);
 }
 
 // a separate thread for recieving serial line data
@@ -205,6 +208,43 @@ void* comm(void *v)
 	return 0;
 }
 
+
+
+// a separate thread for sending files
+void* send(void *v) 
+{
+	bool q = false;
+	int iRecv;
+	
+	tSerialData * pSerialData;
+	pSerialData = (tSerialData *)v;
+	
+	memset(pSerialData->chBuffIn, '\0', BUFFER_SIZE);
+	pSerialData->iBuffLen = 0;
+	memset(pSerialData->chCmdBuff, '\0', BUFFER_SIZE);
+	pSerialData->iCmdBuffLen = 0;
+	
+	while (!q) 
+	{
+		pthread_mutex_lock(&mtx);
+		
+		pthread_cond_wait(&condvar, &mtx);
+		
+		if(fileName == NULL){
+			fprintf(stderr,"Error: No filename specified");
+			return 0;
+		}
+		
+		send_file(hSerial);
+		
+		
+		pthread_mutex_unlock(&mtx);
+		q = quit;
+		usleep(10);
+	}
+	return 0;
+}
+
 // sets terminal functions
 void call_termios(int reset)
 {
@@ -239,6 +279,10 @@ int main(int argc, char *argv[]) {
 	tSerialData oSerialData;
 	oSerialData.hSerial = hSerial;
 	pthread_create(&oSerialData.oCom, NULL, comm, (void *)&oSerialData);
+	
+	tSerialData mSerialData;
+	mSerialData.hSerial = hSerial;
+	pthread_create(&mSerialData.oCom, NULL, send, (void *)&mSerialData);
 	// end of init block
 	
 	
@@ -280,6 +324,9 @@ int main(int argc, char *argv[]) {
 			case 'm': // load file prototype
 				{	
 					load_file(hSerial);
+					//send_file(hSerial);
+					pthread_cond_signal(&condvar);
+					
 					break;
 				}
 
@@ -316,10 +363,14 @@ int main(int argc, char *argv[]) {
 				
 		} // END switch
 	} // END main loop
+	
 	free(selection);
 	
-	
+	quit = true;
 	pthread_join(oSerialData.oCom, NULL);
+	pthread_cond_signal(&condvar);
+	pthread_join(mSerialData.oCom, NULL);
+	
 	serial_close(hSerial);
 	call_termios(1);
 	return 1;
