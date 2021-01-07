@@ -41,6 +41,7 @@ typedef struct tSerialData
 } tSerialData;
 
 bool quit = false;
+bool sendingFile = false;
 char fileName[BUFFER_SIZE];
 char chBuffOut[BUFFER_SIZE];
 char chBuffIn[BUFFER_SIZE];
@@ -298,15 +299,19 @@ void* comm(void *v)
 						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_DOWN") == pSerialData->chCmdBuff)
 						{
-							printf("Nucleo requested LCD clear\n");
 							joy_state = JOY_DOWN;
-							send_string(pSerialData->hSerial, "DRAW:CLEAR 9");
+							if(sendingFile == false){ // if file is being sent dont interfere
+								printf("Nucleo requested LCD clear\n");
+								send_string(pSerialData->hSerial, "DRAW:CLEAR 9");
+							}
 						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_SEL") == pSerialData->chCmdBuff)
 						{
-							printf("Nucleo requested resend\n");
 							joy_state = JOY_SEL;
-							pthread_cond_signal(&condvar);
+							if(sendingFile == false){ // if file is being sent dont interfere
+								printf("Nucleo requested resend\n");
+								pthread_cond_signal(&condvar);
+							}
 						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_UP") == pSerialData->chCmdBuff)
 						{
@@ -367,7 +372,9 @@ void* send(void *v)
 			return 0;
 		}
 		else if(!quit){ // otherwise thread end runs this once more	
+			sendingFile = true;
 			send_file(hSerial);
+			sendingFile = false;
 		}
 		
 		q = quit;

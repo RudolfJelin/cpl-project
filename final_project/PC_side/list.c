@@ -161,7 +161,7 @@ listItem * LI_load(char * strFile)
 	while( (read = getline(&line, &len, pFile)) != -1)
 	{
 		len = uncomment(line);
-		line = realloc(line, len);
+		line = realloc(line, len+1); // +1 for \0
 		
 		if(len < 2){
 			free(line);
@@ -218,6 +218,8 @@ int LI_processIncludes(listItem * pTmp)
 	}
 	while(pTmp != NULL)
 	{
+		listItem * pToBeNext = pTmp->pNext;
+	
 		char * pIncl = strstr(pTmp->pLine, "#include:");
 		if(pIncl)
 		{
@@ -253,7 +255,7 @@ int LI_processIncludes(listItem * pTmp)
 			filesFound++;
 		}
 		
-		pTmp = pTmp->pNext;
+		pTmp = pToBeNext;//pTmp->pNext;
 	}
 	return filesFound;
 }
