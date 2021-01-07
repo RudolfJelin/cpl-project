@@ -99,7 +99,7 @@ void LI_remove(listItem * pTmp)
 {
 	while(pTmp != NULL){
 		listItem * pNext = pTmp->pNext;
-		printf("Freeing line: '%s'\n", pTmp->pLine);
+		//printf("Freeing line: '%s'\n", pTmp->pLine);
 		LI_free(pTmp); 
 		pTmp = pNext;
 	}
@@ -134,7 +134,7 @@ int uncomment(char * line)
 
 listItem * LI_load(char * strFile)
 {	
-	printf("LI_load: %s\n", strFile);
+	//printf("LI_load: %s\n", strFile);
 
 	listItem * firstItem;
 	listItem * pTmp;
@@ -168,16 +168,6 @@ listItem * LI_load(char * strFile)
 			line = NULL;
 			continue; // line was either empty or a comment
 		}
-		
-		//line[len-1] = 0; // \r\n
-		printf(">> Loaded file line: '%s'\n", line);
-			//printf("   Line: \"");
-			char * hex = line;
-			while(*hex){
-				//printf("%02x ", *hex);
-				hex++;
-			}
-			//printf("\"\n");
 		
 		pNew = LI_create(line);
 		if(i == 0){
@@ -232,7 +222,7 @@ int LI_processIncludes(listItem * pTmp)
 					char fileName[BUFFER_SIZE];
 					memset(fileName, 0, BUFFER_SIZE);
 					strncpy(fileName, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
-					printf("File found: %s\n", fileName);
+					//printf("File found: %s\n", fileName);
 					
 					listItem * firstItem;
 					listItem * lastItem;
@@ -266,7 +256,7 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 	//gotoLine ex: "goto:Label3:"
 	// to be obtained using pointer to mid-string
 	
-	printf("gotoLine to be found: '%s'\n", gotoLine);
+	//printf("gotoLine to be found: '%s'\n", gotoLine);
 	
 	int labelCount = labels.count;
 	char labelName[BUFFER_SIZE];
@@ -276,11 +266,11 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 		fprintf(stderr, "Error: Couln't load goto label name\n");
 	}
 	
-	printf("Loaded goto label: '%s'\n", labelName); // ex: labelName = "Label3"
+	//printf("Loaded goto label: '%s'\n", labelName); // ex: labelName = "Label3"
 	
 	for(int i = 0; i < labelCount; i++)
 	{
-		printf("testing: label no. %d/%d: '%s' vs. '%s'\n", i,labelCount,labels.name[i],labelName);
+		//printf("testing: label no. %d/%d: '%s' vs. '%s'\n", i,labelCount,labels.name[i],labelName);
 		if(strcmp(labelName,labels.name[i]) == 0)
 		{
 			return labels.location[i];
@@ -291,7 +281,7 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 
 int wait_eval(char * line)
 {
-	printf("wait_eval called on: '%s'\n", line);
+	//printf("wait_eval called on: '%s'\n", line);
 	int msWait = -1;
 	
 	int iSemicolon = charIndex(line, ':'); //doesnt care about what is after :
@@ -301,7 +291,7 @@ int wait_eval(char * line)
 	}
 	//else  semicolon not found = no time specified
 	
-	printf("Found wait time: '%d'\n", msWait);
+	//printf("Found wait time: '%d'\n", msWait);
 	return msWait;
 }
 
@@ -317,7 +307,7 @@ label_t LI_listLabels(listItem * pTmp) // inputs empty label list pointer and fi
 	
 	while(pTmp != NULL)
 	{
-		printf("Checking for label: %s\n", pTmp->pLine);
+		//printf("Checking for label: %s\n", pTmp->pLine);
 		
 		char * pLabel = strstr(pTmp->pLine, "#label:");
 		if(pLabel)

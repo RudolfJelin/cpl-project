@@ -2,10 +2,15 @@
 #include:intro.txt:
 #wait_for_joystick:5500:
 #if:JOY_LEFT:goto:LabelIntro:
-#else:goto:LabelOutro:
+#else:goto:LabelOutro5:
 
 #label:LabelOutro:
 #label:LabelOutro1:
 #label:LabelOutro2:
 #label:LabelOutro3:
+#label:LabelOutro4:
+#label:LabelOutro5:
+#label:LabelOutro6:
+#label:LabelOutro7:
+#label:LabelOutro8:
 #exit:

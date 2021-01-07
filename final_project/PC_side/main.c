@@ -20,9 +20,9 @@ char * menu[] =
 	"Item 'f': LED OFF",
 	"Item 'b': BUTTON STATE",
 	"Item 'j': Last Joystick action",
-	"Item 'm': Send File",
-	"Item c: Enter a custom command",
-	"Item e: Exit"
+	"Item 'l': Send File",
+	"Item 'c': Enter a custom command",
+	"Item 'e': Exit"
 	};
 
 typedef struct tSerialData
@@ -53,8 +53,7 @@ pthread_cond_t condvar;
 
 void printSelection(char * str)
 {
-	char strLine[] = "Enter option: ";//"\rInfo:                          | Enter option: ";
-	
+	char strLine[] = "Enter option: ";
 	if(str != NULL)
 	{
 		for(int i = 0; i < 23; i++)
@@ -92,17 +91,14 @@ void send_string(int hSerial, char * strOut)
 	printf("Preparing to send '%s'\n", strOut);
 
 	sprintf(chBuffOut, "%s\r\n", strOut);
-	//sprintf(chBuffOut, "*IDN?\r\n");
-	
-	printf("Sending: \"");
 	char * hex = chBuffOut;
 	while(*hex){
-		printf("%02x ", *hex);
 		serial_write(hSerial, hex, 1);
-		usleep(1000*20); // this delay is crucial. For some reason, the serial connection will otherwise skip bytes
+		usleep(1000*20); // this delay is crucial. 
+		//For some reason, the serial connection will otherwise skip bytes
+		//It seems that the evaluation on nucleo side is taking more than in the other projects
 		hex++;
 	}
-	printf("\"\n");
 }
 
 listItem * skip_labels(listItem * pTmp){
@@ -124,17 +120,14 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 	if(firstItem == NULL){
 		return;
 	}
-	//LI_print(firstItem);
 	
 	int filesFound = LI_processIncludes(firstItem);
-	printf("Found files to include: %d\n", filesFound);
+	//printf("Found files to include: %d\n", filesFound);
 	
 	label_t labelList = LI_listLabels(firstItem);//TODO
 	
-	printf("found %d labels\n", labelList.count);
-	
-	
-	LI_print(firstItem);
+	//printf("found %d labels\n", labelList.count);
+	//LI_print(firstItem);
 	
 	listItem * pTmp = firstItem;
 	while(pTmp != NULL)
@@ -144,7 +137,7 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 		//if is #exit
 		if(strstr(pTmp->pLine, "#exit:") == pTmp->pLine)
 		{
-			printf("Breaking LI eval\n");
+			//printf("Breaking LI eval\n");
 			break; // jumps out of loop
 		}
 		//if is #goto or :goto - evaluate and change pTmp
@@ -166,7 +159,7 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 			{
 			
 				elapsed = difftime(time(NULL), start);
-				printf("elapsed: %lf/%lf\n", elapsed*1000, wait_ms);
+				//printf("elapsed: %lf/%lf\n", elapsed*1000, wait_ms);
 				if(wait_ms != (double)-1 && elapsed * 1000 >= wait_ms){ // elapsed_ms > wait_ms or wait_ms = infinite -1
 					quit_timer = 1;	
 				}
@@ -178,7 +171,7 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 		}
 		//#if/else syntax block: 
 		while(strstr(pTmp->pLine, "#if:") == pTmp->pLine){
-			printf("evaluating #if:\n");
+			//printf("evaluating #if:\n");
 			//string ex: #if:JOY_UP:goto:Label1:
 			int iFirstSemicolon = charIndex(pTmp->pLine, ':');
 			if(iFirstSemicolon > 0)
@@ -215,31 +208,25 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 		// #else: syntax block
 		if(strstr(pTmp->pLine, "#else:") == pTmp->pLine)
 		{ // ex: "#else:goto:Label1:"
-			printf("evaluating #else:\n");
+			//printf("evaluating #else:\n");
 			listItem * pTest = goto_eval(&pTmp->pLine[6], labelList);
-			printf("%p\n", pTest);
+			//printf("%p\n", pTest);
 			pTmp = pTest->pNext;
 			break;
 		}
-		
-		//pTmp = skip_labels(pTmp);
-		// label shouldnt be the last line of file
-		
 		
 		send_string(hSerial, pTmp->pLine);
 		pTmp = pTmp->pNext;
 	}
 	
 	printf("End of processing file\n");	 
-	LI_remove(firstItem);	
-	//free(labelList);
-	fflush(stdout);//
+	LI_remove(firstItem);
+	fflush(stdout);
 }
 
 void load_file(int hSerial){
 	printf("\nEnter filename: ");
 	scanf("%s", fileName);
-	//send_file(hSerial);
 }
 
 // a separate thread for recieving serial line data
@@ -279,7 +266,7 @@ void* comm(void *v)
 						pSerialData->chCmdBuff[pSerialData->iCmdBuffLen-2] = 0;
 						
 						// output command
-						printf("NUCLEO SAYS: \"%s\"\n", pSerialData->chCmdBuff);
+						//printf("NUCLEO SAYS: \"%s\"\n", pSerialData->chCmdBuff);
 						
 						// checks for all possible nucleo outputs
 						if(strstr(pSerialData->chCmdBuff, "ERROR") == pSerialData->chCmdBuff)
@@ -356,12 +343,11 @@ void* send(void *v)
 	while (!q) 
 	{
 		pthread_mutex_lock(&mtx);
-		
-		printf("> thread waiting at line 231\n");
+
 		pthread_cond_wait(&condvar, &mtx);
 		
-		if(fileName[0] == 0){
-			fprintf(stderr,"Error: No filename specified");
+		if(fileName[0] == 0 && !quit){ //dont print error if program is set to quit
+			fprintf(stderr,"Error: No filename specified!\n");
 			return 0;
 		}
 		else if(!quit){ // otherwise thread end runs this once more	
@@ -371,8 +357,6 @@ void* send(void *v)
 		}
 		
 		q = quit;
-		printf("> thread at end of loop\n");
-		
 		pthread_mutex_unlock(&mtx);
 		usleep(10);
 	}
@@ -420,9 +404,9 @@ int main(int argc, char *argv[]) {
 	// end of init block
 	
 	
-	// start of main loop
+	// start of main loop section
 	char* selection = malloc(sizeof(char)); // allocates space for input char
-	*selection = '\n';
+	*selection = '\n'; // initializes default value
 	printMenu(selection);
 	
 	while(selection[0] != 'e') // e exits program by exiting loop. 
@@ -432,44 +416,41 @@ int main(int argc, char *argv[]) {
 		}
 		
 		*selection = getchar();
+		printf("\n\n");
 		
 		switch(*selection)
 		{
 			case 'o': // sends "LED ON\r\n"
 				{
 					send_string(hSerial, "LED ON");
-					usleep(1000*1000);
+					usleep(1000*100);
 					break;
 				}
 
 			case 'f': // sends "LED OFF\r\n". 
 				{	
 					send_string(hSerial, "LED OFF");
-					usleep(1000*1000);
+					usleep(1000*100);
 					break;
 				}
 
 			case 'b': // sends "BUTTON?". 
 				{	
 					send_string(hSerial, "BUTTON?");
-					usleep(1000*1000);
+					usleep(1000*100);
 					break;
 				}
 
-			case 'm': // load file prototype, evaluate and send
+			case 'l': // load file prototype, evaluate and send
 				{	
 					load_file(hSerial);
-					//send_file(hSerial);
-					pthread_cond_signal(&condvar);
-					
+					pthread_cond_signal(&condvar); // signal to start processing file
 					break;
 				}
 
 			case 'j': // output last joystick state
 				{	
-					
 					printf("Last joystick state: %s\n", joystick[joy_state]);
-					
 					break;
 				}
 
@@ -478,22 +459,14 @@ int main(int argc, char *argv[]) {
 					printf("Enter command: ");
 					char command[BUFFER_SIZE];
 					scanf("%s", command); // waits for string
-					
-					/*int iBuffOutSize = 0;
-					sprintf(chBuffOut, "%s\r\n", command); //passes the custom string
-					iBuffOutSize = strlen(chBuffOut);
-					int n_written = serial_write(hSerial, chBuffOut, iBuffOutSize);
-					*/
 					send_string(hSerial, command);
 					
-					usleep(1000*1000);
-					
+					usleep(1000*100);
 					break;
 				}
 
 			case 'e':
 				{	// waits for while condition to end loop
-					// can't free memory until after end of loop
 					quit = true;
 					break;
 				}
@@ -518,9 +491,6 @@ int main(int argc, char *argv[]) {
 	call_termios(1);
 	return 1;
 }	
-
-
-
 
 
 
