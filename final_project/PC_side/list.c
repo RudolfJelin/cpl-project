@@ -239,15 +239,15 @@ listItem * gotoEval(char * gotoLine, label * labels, int labelCount)
 	//gotoLine ex: ":goto:Label3:"
 	// to be obtained using pointer to mid-string
 	char labelName[BUFF_SIZE];
-	if(sscanf(":goto:%[^:]s:", labelName) == 0){
+	if(sscanf(":goto:%[^:]s:", labelName) == 0){ // TODO compiler issue ps also fix comment spaces
 		fprintf(stderr, "Error: Couln't load goto label name\n");
 	}
 	
 	printf("Loaded goto label: '%s'\n", labelName); // ex: labelName = "Label3"
 	
-	for(int i = 0; i < gotolineCount; i++)
+	for(int i = 0; i < labelCount; i++)
 	{
-		if(strcmp(labelname,labels[i].name) == 0)
+		if(strcmp(labelName,labels[i].name) == 0)
 		{
 			return labels[i].location;
 		}
