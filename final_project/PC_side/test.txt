@@ -2,4 +2,8 @@
 #label:LabelIntro://testing comments
 #include:intro.txt:
 #wait_for_joystick:8000:8
-#goto:LabelIntro:
+#if:JOY_LEFT:goto:LabelIntro:
+#else:goto:LabelOutro:
+
+#label:LabelOutro:
+#exit:

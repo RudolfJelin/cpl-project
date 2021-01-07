@@ -28,10 +28,8 @@ void LI_remove(listItem * pTmp);
 listItem * LI_load(char * strFile);
 int charIndex(char * str, char ch);
 int LI_processIncludes(listItem * pTmp);
-//listItem * LI_findLabel(listItem * pTmp, char * label);
 label_t LI_listLabels(listItem * pTmp);
 listItem * goto_eval(char * gotoLine, label_t labels);
 int wait_eval(char * line);
-//int main(int argc, char * argv[]);
 
 #endif

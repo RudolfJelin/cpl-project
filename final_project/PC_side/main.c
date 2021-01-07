@@ -119,6 +119,9 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 
 	listItem * firstItem;
 	firstItem = LI_load(fileName);
+	if(firstItem == NULL){
+		return;
+	}
 	//LI_print(firstItem);
 	
 	int filesFound = LI_processIncludes(firstItem);
@@ -135,7 +138,7 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 	while(pTmp != NULL)
 	{
 		//skip all labels
-		while(strstr(pTmp->pLine, "$label:") == pTmp->pLine)
+		while(strstr(pTmp->pLine, "#label:") == pTmp->pLine)
 		{
 			pTmp = pTmp->pNext;
 		}
@@ -174,18 +177,52 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 				}
 			}
 			pTmp = pTmp->pNext;
+		}
 		//#if/else syntax block: 
-		}else if(strstr(pTmp->pLine, "#if:") == pTmp->pLine
-			  || strstr(pTmp->pLine, "#else:") == pTmp->pLine)
+		while(strstr(pTmp->pLine, "#if:") == pTmp->pLine){
+			printf("evaluating #if:\n");
+			//string ex: #if:JOY_UP:goto:Label1:
+			int iFirstSemicolon = charIndex(pTmp->pLine, ':');
+			if(iFirstSemicolon > 0)
 			{
-				//TODO
-				//while(#if)
-				//	if joy_State = joy_state: goto thing, continue
-				//	else pnext
-				//
-				//if(#else)
-				//	goto thing, continue	  
+				int iSecondSemicolon = charIndex(&pTmp->pLine[iFirstSemicolon+1], ':');
+				if(iSecondSemicolon > 0)
+				{
+					char joy_name[BUFF_SIZE];
+					memset(joy_name, 0, BUFF_SIZE);
+					strncpy(joy_name, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
+					//ex: joy_name = "JOY_UP"
+					int if_joy_state = 0;
+					for(int i = 0; i < 6; i++)
+					{
+						if(strstr(joy_name,joystick[i]) == joy_name)
+						{
+							if_joy_state = i;
+							break;
+						}
+					}
+					
+					if(if_joy_state == joy_state) // if condition of #if is met
+					{
+						pTmp = goto_eval(&pTmp->pLine[iFirstSemicolon+1+iSecondSemicolon+1], labelList)->pNext;
+						//TODO: break;???
+					}
+					else
+					{
+						pTmp = pTmp->pNext;
+					}
+				}
 			}
+		}
+		// #else: syntax block
+		if(strstr(pTmp->pLine, "#else:") == pTmp->pLine)
+		{ // ex: "#else:goto:Label1:"
+			printf("evaluating #else:\n");
+			listItem * pTest = goto_eval(&pTmp->pLine[6], labelList);
+			printf("%p\n", pTest);
+			pTmp = pTest->pNext;
+		}
+		
 		
 		
 		

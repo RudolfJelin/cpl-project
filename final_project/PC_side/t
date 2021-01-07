@@ -1,0 +1,11 @@
+#label:LabelIntro:
+#include:intro.txt:
+#wait_for_joystick:80000:
+#if:JOY_LEFT:goto:LabelIntro:
+#else:goto:LabelOutro:
+
+#label:LabelOutro:
+#label:LabelOutro1:
+#label:LabelOutro2:
+#label:LabelOutro3:
+#exit:

@@ -1,6 +1,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "unistd.h"
 
 #define BUFF_SIZE 255
 
@@ -117,7 +118,17 @@ int uncomment(char * line)
 		if(line[i] == 0x0a || line[i] == 0x0d || line[i] == 0 || isComment){
 			line[i] = 0;
 		}	
-	}//TODO strip trailing whitelspace
+	}//TODO strip trailing whitelspace - AND TEST IT
+	for(int i = strlen(line)-1; i >= 0; i--)
+	{
+		if(line[i] == ' ' || line[i] == '\t'){
+			line[i] = 0;
+		}
+		else{
+			break;
+		}
+	}
+	
 	return strlen(line);
 }
 
@@ -129,10 +140,17 @@ listItem * LI_load(char * strFile)
 	listItem * pTmp;
 	listItem * pNew;
 
+	if(access(strFile, F_OK)){
+		fprintf(stderr, "Error: invalid file!\n");
+		//exit(EXIT_FAILURE);
+		return NULL;
+	}
+
 	FILE * pFile = fopen(strFile, "r");
 	if(pFile == NULL){
 		fprintf(stderr, "Error: invalid file!\n");
-		exit(EXIT_FAILURE);
+		//exit(EXIT_FAILURE);
+		return NULL;
 	}
 	
 	char * line = NULL;
@@ -153,13 +171,13 @@ listItem * LI_load(char * strFile)
 		
 		//line[len-1] = 0; // \r\n
 		printf(">> Loaded file line: '%s'\n", line);
-			printf("   Line: \"");
+			//printf("   Line: \"");
 			char * hex = line;
 			while(*hex){
-				printf("%02x ", *hex);
+				//printf("%02x ", *hex);
 				hex++;
 			}
-			printf("\"\n");
+			//printf("\"\n");
 		
 		pNew = LI_create(line);
 		if(i == 0){
@@ -226,6 +244,8 @@ int LI_processIncludes(listItem * pTmp)
 						
 						lastItem->pNext = pTmp->pNext;
 						pTmp->pNext->pPrev = lastItem;
+						
+						LI_free(pTmp);
 					}
 					
 				}
@@ -244,6 +264,8 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 	//gotoLine ex: "goto:Label3:"
 	// to be obtained using pointer to mid-string
 	
+	printf("gotoLine to be found: '%s'\n", gotoLine);
+	
 	int labelCount = labels.count;
 	char labelName[BUFF_SIZE];
 	memset(labelName, 0, BUFF_SIZE);
@@ -256,6 +278,7 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 	
 	for(int i = 0; i < labelCount; i++)
 	{
+		printf("testing: label no. %d/%d: '%s' vs. '%s'\n", i,labelCount,labels.name[i],labelName);
 		if(strcmp(labelName,labels.name[i]) == 0)
 		{
 			return labels.location[i];
