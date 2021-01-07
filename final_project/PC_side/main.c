@@ -123,18 +123,34 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 	int filesFound = LI_processIncludes(firstItem);
 	printf("Found files to include: %d\n", filesFound);
 	
-	label * labelList;
-	int labelCount = LI_listLabels(labelList, firstItem);//TODO
+	label_t labelList = LI_listLabels(firstItem);//TODO
 	
-	printf("found %d labels\n", labelCount);
+	printf("found %d labels\n", labelList.count);
+	
+	
 	LI_print(firstItem);
 	
 	listItem * pTmp = firstItem;
 	while(pTmp != NULL)
 	{
 		//if is #exit
-		
+		if(strstr(pTmp->pLine, "#exit:") == pTmp->pLine)
+		{
+			printf("Breaking LI eval\n");
+			break; // jumps out of loop
+		}
 		//if is #goto or :goto - evaluate and change pTmp
+		else if(strstr(pTmp->pLine, "#goto:") == pTmp->pLine)
+		{
+			pTmp = goto_eval(&pTmp->pLine[1], labelList); // pTmp jumps to label, then is moved at end of loop
+		}
+		// joystic wait
+		else if(strstr(pTmp->pLine, "#wait_for_joystick:") == pTmp->pLine)
+		{
+			int wait_time = wait_eval(&pTmp->pLine[19]);
+		}
+		
+		
 		
 		//if wait for joystick - evaluate and move on
 		//if is #if - evaluate and dont send
@@ -146,9 +162,10 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 		send_string(hSerial, pTmp->pLine);
 		pTmp = pTmp->pNext;
 	}
-		
+	
+	printf("End of processing file\n");	 
 	LI_remove(firstItem);	
-	free(labelList);
+	//free(labelList);
 	fflush(stdout);//
 }
 
@@ -335,7 +352,8 @@ int main(int argc, char *argv[]) {
 	
 	// start of main loop
 	char* selection = malloc(sizeof(char)); // allocates space for input char
-	//printMenu(selection);
+	*selection = '\n';
+	printMenu(selection);
 	
 	while(selection[0] != 'e') // e exits program by exiting loop. 
 	{

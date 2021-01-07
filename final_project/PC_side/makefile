@@ -1,5 +1,6 @@
 CC:=clang
 LDFLAGS+=-pthread
+CFLAGS+=-g
 OBJS=$(patsubst %.c,%.o,$(wildcard *.c))
 
 TARGET=program

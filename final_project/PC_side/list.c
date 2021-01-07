@@ -11,11 +11,12 @@ typedef struct listItem
 	char * pLine;
 }listItem;
 
-typedef struct label
+typedef struct label_t
 {
-	char name[BUFF_SIZE];
-	listItem * location;
-}label;
+	int count;
+	char name[10][BUFF_SIZE];
+	listItem * location[10];
+}label_t;
 
 listItem * LI_create(char * strLine)
 {
@@ -97,7 +98,8 @@ void LI_remove(listItem * pTmp)
 {
 	while(pTmp != NULL){
 		listItem * pNext = pTmp->pNext;
-		LI_free(pTmp);
+		printf("Freeing line: '%s'\n", pTmp->pLine);
+		LI_free(pTmp); 
 		pTmp = pNext;
 	}
 
@@ -233,13 +235,15 @@ int LI_processIncludes(listItem * pTmp)
 	return filesFound;
 }
 
-listItem * gotoEval(char * gotoLine, label * labels, int labelCount) 
+listItem * goto_eval(char * gotoLine, label_t labels) 
 				// input: line from beginning of goto statement and list of labels to compare
 {				// output: pointer to where goto is pointing
-	//gotoLine ex: ":goto:Label3:"
+	//gotoLine ex: "goto:Label3:"
 	// to be obtained using pointer to mid-string
+	
+	int labelCount = labels.count;
 	char labelName[BUFF_SIZE];
-	if(sscanf(":goto:%[^:]s:", labelName) == 0){ // TODO compiler issue ps also fix comment spaces
+	if(sscanf("goto:%[^:]s:", labelName) == 0){ // TODO compiler issue ps also fix comment spaces
 		fprintf(stderr, "Error: Couln't load goto label name\n");
 	}
 	
@@ -247,24 +251,29 @@ listItem * gotoEval(char * gotoLine, label * labels, int labelCount)
 	
 	for(int i = 0; i < labelCount; i++)
 	{
-		if(strcmp(labelName,labels[i].name) == 0)
+		if(strcmp(labelName,labels.name[i]) == 0)
 		{
-			return labels[i].location;
+			return labels.location[i];
 		}
 	}
-	return NULL;
-	
+	return NULL; // will end program
 }
 
-int LI_listLabels(label * labels, listItem * pTmp)  // inputs empty label list pointer and firstItem, 
-{													//fills label list, outputs number of labels
-	if(pTmp == NULL){
-		return 0;
-	}
-	
+int wait_eval(char * line)
+{
+	printf("wait_eval called on: '%s'\n", line);
+	return -1;
+}
+
+label_t LI_listLabels(listItem * pTmp) // inputs empty label list pointer and firstItem, 
+{								     //fills label list, outputs number of labels
+	label_t labels;
 	int labelsFound = 0;
 	int labelCapacity = 10;
-	labels = malloc(labelCapacity * sizeof(label));
+
+	if(pTmp == NULL){
+		exit(-1);
+	}
 	
 	while(pTmp != NULL)
 	{
@@ -280,18 +289,14 @@ int LI_listLabels(label * labels, listItem * pTmp)  // inputs empty label list p
 				if(iSecondSemicolon > 0)
 				{
 					if(labelsFound >= labelCapacity){
-						labelCapacity += 10;
-						labels = realloc(labels, labelCapacity);
+						fprintf(stderr, "Label overflow error\n");
+						exit(-1);
 					}
-				
-					char labelName[BUFF_SIZE];
-					memset(labelName, 0, BUFF_SIZE);
-					strncpy(labelName, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
-					printf("Label found: %s\n", labelName);
 					
-					//labels[labelsFound].name = labelName;
-					sprintf(labels[labelsFound].name, "%s", labelName);
-					labels[labelsFound].location = pTmp;
+					memset(labels.name[labelsFound], 0, BUFF_SIZE);
+					strncpy(labels.name[labelsFound], &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
+					
+					labels.location[labelsFound] = pTmp;
 					
 					labelsFound++;
 				}
@@ -299,7 +304,8 @@ int LI_listLabels(label * labels, listItem * pTmp)  // inputs empty label list p
 		}
 		pTmp = pTmp->pNext;
 	}
-
-	return labelsFound;
+	labels.count = labelsFound;
+	
+	return labels;
 }
 
