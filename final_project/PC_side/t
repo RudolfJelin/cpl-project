@@ -1,16 +1,11 @@
 #label:LabelIntro:
-#include:intro.txt:
-#wait_for_joystick:5500:
-#if:JOY_LEFT:goto:LabelIntro:
-#else:goto:LabelOutro5:
 
-#label:LabelOutro:
-#label:LabelOutro1:
-#label:LabelOutro2:
-#label:LabelOutro3:
-#label:LabelOutro4:
-#label:LabelOutro5:
-#label:LabelOutro6:
-#label:LabelOutro7:
-#label:LabelOutro8:
+
+//DRAW:TEXT 24,120,Nucleo RULEZ!,0
+//DRAW:TEXT 14,50,Nucleo RULEZ!,1
+//DRAW:TEXT 4,20,Nucleo RULEZ!,2
+DRAW:TEXT 4,120,Nucleo RULEZ!,0
+DRAW:SETFONT 12
+DRAW:TEXT 4,20,Nucleo RULEZ!,0
+
 #exit:

@@ -34,7 +34,6 @@ typedef struct tSerialData
 	int iCmdBuffLen;
 	
 	pthread_t oCom;
-	int hSerial;
 	
 } tSerialData;
 
@@ -68,7 +67,7 @@ void printSelection(char * str)
 			}
 		}
 	}
-	printf("\r%s", strLine); // unfortunately printing to stderr will not be nicely formatted, also TODO remove newline?
+	printf("\r%s", strLine);
 }
 
 void printMenu(char* selection)
@@ -86,7 +85,7 @@ void printMenu(char* selection)
 	printSelection(NULL);
 }
 
-void send_string(int hSerial, char * strOut)
+void send_string(char * strOut)
 {
 	printf("Preparing to send '%s'\n", strOut);
 
@@ -94,7 +93,7 @@ void send_string(int hSerial, char * strOut)
 	char * hex = chBuffOut;
 	while(*hex){
 		serial_write(hSerial, hex, 1);
-		usleep(1000*20); // this delay is crucial. 
+		usleep(1000*80); // this delay is crucial. 
 		//For some reason, the serial connection will otherwise skip bytes
 		//It seems that the evaluation on nucleo side is taking more than in the other projects
 		hex++;
@@ -111,9 +110,9 @@ listItem * skip_labels(listItem * pTmp){
 }
 
 // loads file line by line, then sends it. Is only accessed by a threaad
-void send_file(int hSerial) // TODO tO process includes and simmilar
+void send_file()
 {
-	printf("Sending file '%s'\n", fileName);
+	//printf("Sending file '%s'\n", fileName);
 
 	listItem * firstItem;
 	firstItem = LI_load(fileName);
@@ -124,7 +123,7 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 	int filesFound = LI_processIncludes(firstItem);
 	//printf("Found files to include: %d\n", filesFound);
 	
-	label_t labelList = LI_listLabels(firstItem);//TODO
+	label_t labelList = LI_listLabels(firstItem);
 	
 	//printf("found %d labels\n", labelList.count);
 	//LI_print(firstItem);
@@ -215,16 +214,17 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 			break;
 		}
 		
-		send_string(hSerial, pTmp->pLine);
+		send_string(pTmp->pLine);
 		pTmp = pTmp->pNext;
 	}
 	
+	printf("pTmp: %p\n", pTmp);
 	printf("End of processing file\n");	 
 	LI_remove(firstItem);
 	fflush(stdout);
 }
 
-void load_file(int hSerial){
+void load_file(){
 	printf("\nEnter filename: ");
 	scanf("%s", fileName);
 }
@@ -245,7 +245,7 @@ void* comm(void *v)
 	
 	while (!q) {
 		
-		iRecv = serial_read(pSerialData->hSerial, pSerialData->chBuffIn, BUFFER_SIZE);
+		iRecv = serial_read(hSerial,pSerialData->chBuffIn, BUFFER_SIZE);
 		if (iRecv > 0)
 		{
 			for(int i = 0; i < iRecv; i++)
@@ -268,7 +268,7 @@ void* comm(void *v)
 						// output command
 						//printf("NUCLEO SAYS: \"%s\"\n", pSerialData->chCmdBuff);
 						
-						// checks for all possible nucleo outputs
+						// checks for all known nucleo outputs
 						if(strstr(pSerialData->chCmdBuff, "ERROR") == pSerialData->chCmdBuff)
 						{
 							printf("Wrong command syntax!\n");
@@ -281,16 +281,22 @@ void* comm(void *v)
 						{
 							joy_state = JOY_DOWN;
 							if(sendingFile == false){ // if file is being sent dont interfere
+								sendingFile = true;
 								printf("Nucleo requested LCD clear\n");
-								send_string(pSerialData->hSerial, "DRAW:CLEAR 9");
+								send_string("DRAW:CLEAR 9");
+								usleep(1000 * 200);
+								sendingFile = false;
 							}
 						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_SEL") == pSerialData->chCmdBuff)
 						{
 							joy_state = JOY_SEL;
-							if(sendingFile == false){ // if file is being sent dont interfere
+							if(sendingFile == false ){ // if file is being sent dont interfere
+								sendingFile = true;
 								printf("Nucleo requested resend\n");
 								pthread_cond_signal(&condvar);
+								usleep(1000 * 200);
+								sendingFile = false;
 							}
 						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_UP") == pSerialData->chCmdBuff)
@@ -351,8 +357,13 @@ void* send(void *v)
 			return 0;
 		}
 		else if(!quit){ // otherwise thread end runs this once more	
+			while(sendingFile == true) // e.g. something else is sending files
+			{
+				usleep(1000 * 100); // long interval decreases number of checks. 0.1s doesn't really affect anything.
+			}
+			
 			sendingFile = true;
-			send_file(hSerial);
+			send_file();
 			sendingFile = false;
 		}
 		
@@ -395,11 +406,9 @@ int main(int argc, char *argv[]) {
 	call_termios(0);
 	//init nucleo's communication service thread
 	tSerialData oSerialData;
-	oSerialData.hSerial = hSerial;
 	pthread_create(&oSerialData.oCom, NULL, comm, (void *)&oSerialData);
 	
 	tSerialData mSerialData;
-	mSerialData.hSerial = hSerial;
 	pthread_create(&mSerialData.oCom, NULL, send, (void *)&mSerialData);
 	// end of init block
 	
@@ -422,28 +431,28 @@ int main(int argc, char *argv[]) {
 		{
 			case 'o': // sends "LED ON\r\n"
 				{
-					send_string(hSerial, "LED ON");
+					send_string("LED ON");
 					usleep(1000*100);
 					break;
 				}
 
 			case 'f': // sends "LED OFF\r\n". 
 				{	
-					send_string(hSerial, "LED OFF");
+					send_string("LED OFF");
 					usleep(1000*100);
 					break;
 				}
 
 			case 'b': // sends "BUTTON?". 
 				{	
-					send_string(hSerial, "BUTTON?");
+					send_string("BUTTON?");
 					usleep(1000*100);
 					break;
 				}
 
 			case 'l': // load file prototype, evaluate and send
 				{	
-					load_file(hSerial);
+					load_file();
 					pthread_cond_signal(&condvar); // signal to start processing file
 					break;
 				}
@@ -456,12 +465,15 @@ int main(int argc, char *argv[]) {
 
 			case 'c': // sends a string from stdin, without thread
 				{	
-					printf("Enter command: ");
-					char command[BUFFER_SIZE];
-					scanf("%s", command); // waits for string
-					send_string(hSerial, command);
-					
-					usleep(1000*100);
+					if(sendingFile == false){
+						sendingFile = true;
+						printf("Enter command: ");
+						char command[BUFFER_SIZE];
+						scanf("%s", command); // waits for string
+						send_string(command);
+						usleep(1000*100);
+						sendingFile = false;
+					}
 					break;
 				}
 
