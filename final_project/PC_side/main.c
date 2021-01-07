@@ -211,7 +211,7 @@ void send_file()
 			listItem * pTest = goto_eval(&pTmp->pLine[6], labelList);
 			//printf("%p\n", pTest);
 			pTmp = pTest->pNext;
-			break;
+			continue;
 		}
 		
 		send_string(pTmp->pLine);
