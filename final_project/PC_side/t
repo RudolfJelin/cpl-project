@@ -1,6 +1,6 @@
 #label:LabelIntro:
 #include:intro.txt:
-#wait_for_joystick:80000:
+#wait_for_joystick:5500:
 #if:JOY_LEFT:goto:LabelIntro:
 #else:goto:LabelOutro:
 

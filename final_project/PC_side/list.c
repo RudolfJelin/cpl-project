@@ -3,7 +3,7 @@
 #include "string.h"
 #include "unistd.h"
 
-#define BUFF_SIZE 255
+#include "commands.h"
 
 typedef struct listItem
 {
@@ -15,7 +15,7 @@ typedef struct listItem
 typedef struct label_t
 {
 	int count;
-	char name[10][BUFF_SIZE];
+	char name[10][BUFFER_SIZE];
 	listItem * location[10];
 }label_t;
 
@@ -229,8 +229,8 @@ int LI_processIncludes(listItem * pTmp)
 				int iSecondSemicolon = charIndex(&pTmp->pLine[iFirstSemicolon+1], ':');
 				if(iSecondSemicolon > 0)
 				{
-					char fileName[BUFF_SIZE];
-					memset(fileName, 0, BUFF_SIZE);
+					char fileName[BUFFER_SIZE];
+					memset(fileName, 0, BUFFER_SIZE);
 					strncpy(fileName, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
 					printf("File found: %s\n", fileName);
 					
@@ -269,8 +269,8 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 	printf("gotoLine to be found: '%s'\n", gotoLine);
 	
 	int labelCount = labels.count;
-	char labelName[BUFF_SIZE];
-	memset(labelName, 0, BUFF_SIZE);
+	char labelName[BUFFER_SIZE];
+	memset(labelName, 0, BUFFER_SIZE);
 	
 	if(sscanf(gotoLine, "goto:%[^:]s:", labelName) == 0){ // TODO compiler issue ps also fix comment spaces
 		fprintf(stderr, "Error: Couln't load goto label name\n");
@@ -333,7 +333,7 @@ label_t LI_listLabels(listItem * pTmp) // inputs empty label list pointer and fi
 						exit(-1);
 					}
 					
-					memset(labels.name[labelsFound], 0, BUFF_SIZE);
+					memset(labels.name[labelsFound], 0, BUFFER_SIZE);
 					strncpy(labels.name[labelsFound], &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
 					
 					labels.location[labelsFound] = pTmp;

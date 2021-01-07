@@ -13,8 +13,6 @@
 #include "serial.h"
 #include "list.h"
 
-#define BUFFER_SIZE 255
-
 // array of strings for command menu
 char * menu[] = 
 	{
@@ -49,12 +47,6 @@ int hSerial;
 
 int joy_state = 0;
 char joystick[6][10] = {"JOY_NONE", "JOY_UP", "JOY_DOWN", "JOY_LEFT", "JOY_RIGHT", "JOY_SEL"};
-#define JOY_NONE 0
-#define JOY_UP 1
-#define JOY_DOWN 2
-#define JOY_LEFT 3
-#define JOY_RIGHT 4
-#define JOY_SEL 5
 
 pthread_mutex_t mtx;
 pthread_cond_t condvar;
@@ -77,7 +69,7 @@ void printSelection(char * str)
 			}
 		}
 	}
-	printf("\r%s\n", strLine); // unfortunately printing to stderr will not be nicely formatted, also TODO remove newline?
+	printf("\r%s", strLine); // unfortunately printing to stderr will not be nicely formatted, also TODO remove newline?
 }
 
 void printMenu(char* selection)
@@ -107,10 +99,19 @@ void send_string(int hSerial, char * strOut)
 	while(*hex){
 		printf("%02x ", *hex);
 		serial_write(hSerial, hex, 1);
-		usleep(1000*100); // this delay is crucial. For some reason, the serial connection will otherwise skip bytes
+		usleep(1000*20); // this delay is crucial. For some reason, the serial connection will otherwise skip bytes
 		hex++;
 	}
 	printf("\"\n");
+}
+
+listItem * skip_labels(listItem * pTmp){
+		//skip all labels
+		while(strstr(pTmp->pLine, "#label:") == pTmp->pLine)
+		{
+			pTmp = pTmp->pNext;
+		}
+		return pTmp;
 }
 
 // loads file line by line, then sends it. Is only accessed by a threaad
@@ -138,12 +139,8 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 	listItem * pTmp = firstItem;
 	while(pTmp != NULL)
 	{
-		//skip all labels
-		while(strstr(pTmp->pLine, "#label:") == pTmp->pLine)
-		{
-			pTmp = pTmp->pNext;
-		}
-	
+		
+		pTmp = skip_labels(pTmp);
 		//if is #exit
 		if(strstr(pTmp->pLine, "#exit:") == pTmp->pLine)
 		{
@@ -206,7 +203,7 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 					if(if_joy_state == joy_state) // if condition of #if is met
 					{
 						pTmp = goto_eval(&pTmp->pLine[iFirstSemicolon+1+iSecondSemicolon+1], labelList)->pNext;
-						//TODO: break;???
+						break;
 					}
 					else
 					{
@@ -222,16 +219,12 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 			listItem * pTest = goto_eval(&pTmp->pLine[6], labelList);
 			printf("%p\n", pTest);
 			pTmp = pTest->pNext;
+			break;
 		}
 		
+		//pTmp = skip_labels(pTmp);
+		// label shouldnt be the last line of file
 		
-		
-		
-		//if is #if - evaluate and dont send
-		//or if is #else
-		
-		//if is #include, skip
-		//else send
 		
 		send_string(hSerial, pTmp->pLine);
 		pTmp = pTmp->pNext;
