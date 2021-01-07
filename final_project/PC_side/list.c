@@ -233,13 +233,39 @@ int LI_processIncludes(listItem * pTmp)
 	return filesFound;
 }
 
-label * LI_listLabels(listItem * pTmp){
-	if(pTmp == NULL){
-		return NULL;
+listItem * gotoEval(char * gotoLine, label * labels, int labelCount) 
+				// input: line from beginning of goto statement and list of labels to compare
+{				// output: pointer to where goto is pointing
+	//gotoLine ex: ":goto:Label3:"
+	// to be obtained using pointer to mid-string
+	char labelName[BUFF_SIZE];
+	if(sscanf(":goto:%[^:]s:", labelName) == 0){
+		fprintf(stderr, "Error: Couln't load goto label name\n");
 	}
 	
-	label labels[10];
+	printf("Loaded goto label: '%s'\n", labelName); // ex: labelName = "Label3"
+	
+	for(int i = 0; i < gotolineCount; i++)
+	{
+		if(strcmp(labelname,labels[i].name) == 0)
+		{
+			return labels[i].location;
+		}
+	}
+	return NULL;
+	
+}
+
+int LI_listLabels(label * labels, listItem * pTmp)  // inputs empty label list pointer and firstItem, 
+{													//fills label list, outputs number of labels
+	if(pTmp == NULL){
+		return 0;
+	}
+	
 	int labelsFound = 0;
+	int labelCapacity = 10;
+	labels = malloc(labelCapacity * sizeof(label));
+	
 	while(pTmp != NULL)
 	{
 		printf("Checking for label: %s\n", pTmp->pLine);
@@ -253,17 +279,27 @@ label * LI_listLabels(listItem * pTmp){
 				int iSecondSemicolon = charIndex(&pTmp->pLine[iFirstSemicolon+1], ':');
 				if(iSecondSemicolon > 0)
 				{
-					char fileName[BUFF_SIZE];
-					memset(fileName, 0, BUFF_SIZE);
-					strncpy(fileName, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
-					printf("File found: %s\n", fileName);
+					if(labelsFound >= labelCapacity){
+						labelCapacity += 10;
+						labels = realloc(labels, labelCapacity);
+					}
+				
+					char labelName[BUFF_SIZE];
+					memset(labelName, 0, BUFF_SIZE);
+					strncpy(labelName, &pTmp->pLine[iFirstSemicolon+1], iSecondSemicolon);
+					printf("Label found: %s\n", labelName);
 					
+					//labels[labelsFound].name = labelName;
+					sprintf(labels[labelsFound].name, "%s", labelName);
+					labels[labelsFound].location = pTmp;
+					
+					labelsFound++;
 				}
 			}
 		}
 		pTmp = pTmp->pNext;
 	}
 
-	return labels;
+	return labelsFound;
 }
 

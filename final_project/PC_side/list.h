@@ -25,7 +25,7 @@ listItem * LI_load(char * strFile);
 int charIndex(char * str, char ch);
 int LI_processIncludes(listItem * pTmp);
 //listItem * LI_findLabel(listItem * pTmp, char * label);
-label * LI_listLabels(listItem * pTmp);
+int LI_listLabels(label * labels, listItem * pTmp);
 //int main(int argc, char * argv[]);
 
 #endif

@@ -123,18 +123,32 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 	int filesFound = LI_processIncludes(firstItem);
 	printf("Found files to include: %d\n", filesFound);
 	
-	label * labelList = LI_listLabels(firstItem);
+	label * labelList;
+	int labelCount = LI_listLabels(labelList, firstItem);//TODO
 	
+	printf("found %d labels\n", labelCount);
 	LI_print(firstItem);
 	
 	listItem * pTmp = firstItem;
 	while(pTmp != NULL)
 	{
+		//if is #exit
+		
+		//if is #goto or :goto - evaluate and change pTmp
+		
+		//if wait for joystick - evaluate and move on
+		//if is #if - evaluate and dont send
+		//or if is #else
+		
+		//if is #include, skip
+		//else send
+		
 		send_string(hSerial, pTmp->pLine);
 		pTmp = pTmp->pNext;
 	}
 		
 	LI_remove(firstItem);	
+	free(labelList);
 	fflush(stdout);//
 }
 
