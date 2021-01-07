@@ -18,6 +18,18 @@ typedef struct label_t
 	listItem * location[10];
 }label_t;
 
+void LI_free(listItem * item)
+{
+	if(item != NULL){
+		if(item->pLine != NULL){
+			free(item->pLine);
+			item->pLine = NULL;
+		}
+		free(item);
+	}
+	
+}
+
 listItem * LI_create(char * strLine)
 {
 	listItem * p = (listItem *)malloc(sizeof(listItem));
@@ -32,7 +44,7 @@ listItem * LI_create(char * strLine)
 	int len = strlen(strLine); // TODO ?? -1 to remove trailing newline. Will be replaced with /r/n
 	p->pLine = (char *) malloc(len+1); // to include \0
 	if(p->pLine == NULL){
-		free(p); // can be replaced with LI_free
+		LI_free(p); // can be replaced with LI_free
 		return NULL;
 	}
 	(void)memset( (void *)p->pLine, 0, len+1);
@@ -40,18 +52,6 @@ listItem * LI_create(char * strLine)
 	p->pLine[len] = 0;// redund., will leave here (TODO)
 	
 	return p;
-}
-
-void LI_free(listItem * item)
-{
-	if(item != NULL){
-		if(item->pLine != NULL){
-			free(item->pLine);
-			item->pLine = NULL;
-		}
-		free(item);
-	}
-	
 }
 
 int LI_length(listItem * pTmp)
@@ -117,7 +117,7 @@ int uncomment(char * line)
 		if(line[i] == 0x0a || line[i] == 0x0d || line[i] == 0 || isComment){
 			line[i] = 0;
 		}	
-	}
+	}//TODO strip trailing whitelspace
 	return strlen(line);
 }
 
@@ -143,8 +143,11 @@ listItem * LI_load(char * strFile)
 	while( (read = getline(&line, &len, pFile)) != -1)
 	{
 		len = uncomment(line);
+		line = realloc(line, len);
 		
 		if(len < 2){
+			free(line);
+			line = NULL;
 			continue; // line was either empty or a comment
 		}
 		

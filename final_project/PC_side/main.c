@@ -98,7 +98,7 @@ void send_string(int hSerial, char * strOut)
 {
 	printf("Preparing to send '%s'\n", strOut);
 
-	sprintf(chBuffOut, "%s\r\n", strOut); //TODO /r/n removed
+	sprintf(chBuffOut, "%s\r\n", strOut);
 	//sprintf(chBuffOut, "*IDN?\r\n");
 	
 	printf("Sending: \"");
@@ -134,6 +134,12 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 	listItem * pTmp = firstItem;
 	while(pTmp != NULL)
 	{
+		//skip all labels
+		while(strstr(pTmp->pLine, "$label:") == pTmp->pLine)
+		{
+			pTmp = pTmp->pNext;
+		}
+	
 		//if is #exit
 		if(strstr(pTmp->pLine, "#exit:") == pTmp->pLine)
 		{
@@ -146,6 +152,7 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 			pTmp = goto_eval(&pTmp->pLine[1], labelList)->pNext; // pTmp jumps to label, then skips it
 		}
 		// joystic wait
+		//if wait for joystick - evaluate and move on
 		else if(strstr(pTmp->pLine, "#wait_for_joystick:") == pTmp->pLine)
 		{
 			joy_state = JOY_NONE;
@@ -167,12 +174,21 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 				}
 			}
 			pTmp = pTmp->pNext;
-			
-		}
+		//#if/else syntax block: 
+		}else if(strstr(pTmp->pLine, "#if:") == pTmp->pLine
+			  || strstr(pTmp->pLine, "#else:") == pTmp->pLine)
+			{
+				//TODO
+				//while(#if)
+				//	if joy_State = joy_state: goto thing, continue
+				//	else pnext
+				//
+				//if(#else)
+				//	goto thing, continue	  
+			}
 		
 		
 		
-		//if wait for joystick - evaluate and move on
 		//if is #if - evaluate and dont send
 		//or if is #else
 		
@@ -190,7 +206,6 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 }
 
 void load_file(int hSerial){
-	// loads filename; TODO
 	printf("\nEnter filename: ");
 	scanf("%s", fileName);
 	//send_file(hSerial);
@@ -254,8 +269,6 @@ void* comm(void *v)
 						{
 							printf("Nucleo requested resend\n");
 							joy_state = JOY_SEL;
-							//send_file(pSerialData->hSerial);TODO check if this part is correct
-							//this instead:
 							pthread_cond_signal(&condvar);
 						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_UP") == pSerialData->chCmdBuff)
@@ -356,7 +369,7 @@ int main(int argc, char *argv[]) {
 	printf("Path to the serial interface is \"%s\"\n", argv[1]);
 	hSerial = serial_init(argv[1]);
 	if (hSerial <= 0){ // could not establish connection
-		//TODO return -1;
+		return -1;
 	}
 	call_termios(0);
 	//init nucleo's communication service thread
