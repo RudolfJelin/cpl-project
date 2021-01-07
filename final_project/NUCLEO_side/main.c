@@ -815,7 +815,7 @@ void main(void)
             break;
         } // end switch( oJoyState )
 
-
+        /*
         // prints current input from serial
         // debug function
         if( uiSerRecv != 0 ) // if any input given
@@ -823,7 +823,7 @@ void main(void)
             //BSP_LCD_SetFont( &Font20 );
             //BSP_LCD_SetTextColor( LCD_COLOR_BLACK );
             BSP_LCD_DisplayStringAtLine( iDefLine, chArr);
-        }
+        }*/
         //
         // Button reading - the button is hidden under the display
         // uiButtState = BSP_PB_GetState( BUTTON_USER );
