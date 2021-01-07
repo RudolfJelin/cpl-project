@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <termios.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "commands.h"
 #include "serial.h"
@@ -142,12 +143,31 @@ void send_file(int hSerial) // TODO tO process includes and simmilar
 		//if is #goto or :goto - evaluate and change pTmp
 		else if(strstr(pTmp->pLine, "#goto:") == pTmp->pLine)
 		{
-			pTmp = goto_eval(&pTmp->pLine[1], labelList); // pTmp jumps to label, then is moved at end of loop
+			pTmp = goto_eval(&pTmp->pLine[1], labelList)->pNext; // pTmp jumps to label, then skips it
 		}
 		// joystic wait
 		else if(strstr(pTmp->pLine, "#wait_for_joystick:") == pTmp->pLine)
 		{
-			int wait_time = wait_eval(&pTmp->pLine[19]);
+			joy_state = JOY_NONE;
+			double wait_ms = (double)wait_eval(&pTmp->pLine[19]);
+			
+			time_t start = time(NULL);
+			double elapsed;
+			int quit_timer = 0;
+			while((!quit_timer) && (!joy_state)) // while time running or 
+			{
+			
+				elapsed = difftime(time(NULL), start);
+				printf("elapsed: %lf/%lf\n", elapsed*1000, wait_ms);
+				if(wait_ms != (double)-1 && elapsed * 1000 >= wait_ms){ // elapsed_ms > wait_ms or wait_ms = infinite -1
+					quit_timer = 1;	
+				}
+				else{
+					usleep(100 * 1000); // 0.1s accuracy is OK enough
+				}
+			}
+			pTmp = pTmp->pNext;
+			
 		}
 		
 		

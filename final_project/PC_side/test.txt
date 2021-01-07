@@ -1,3 +1,5 @@
-*IDN?
-DRAW:CLEAR 3
-#exit:
+// Intro 
+#label:LabelIntro://testing comments
+#include:intro.txt:
+#wait_for_joystick:8000:8
+#goto:LabelIntro:

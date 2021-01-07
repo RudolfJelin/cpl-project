@@ -243,7 +243,9 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 	
 	int labelCount = labels.count;
 	char labelName[BUFF_SIZE];
-	if(sscanf("goto:%[^:]s:", labelName) == 0){ // TODO compiler issue ps also fix comment spaces
+	memset(labelName, 0, BUFF_SIZE);
+	
+	if(sscanf(gotoLine, "goto:%[^:]s:", labelName) == 0){ // TODO compiler issue ps also fix comment spaces
 		fprintf(stderr, "Error: Couln't load goto label name\n");
 	}
 	
@@ -262,7 +264,17 @@ listItem * goto_eval(char * gotoLine, label_t labels)
 int wait_eval(char * line)
 {
 	printf("wait_eval called on: '%s'\n", line);
-	return -1;
+	int msWait = -1;
+	
+	int iSemicolon = charIndex(line, ':'); //doesnt care about what is after :
+	if(iSemicolon > 0){
+		//line[iSemicolon] = 0; //also edits original string
+		msWait = atoi(line);
+	}
+	//else  semicolon not found = no time specified
+	
+	printf("Found wait time: '%d'\n", msWait);
+	return msWait;
 }
 
 label_t LI_listLabels(listItem * pTmp) // inputs empty label list pointer and firstItem, 
