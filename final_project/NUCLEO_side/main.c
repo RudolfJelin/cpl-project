@@ -532,7 +532,7 @@ void commandHandler(char * command)
     {
     	//char msg[cRECV_MAX] = "NUCLEO F446RE: author\r\n";
         //HAL_UART_Transmit( &hUART2, (uint8_t*)msg, strlen(msg), 0xFFFF);
-    	commandMessage("NUCLEO F4xxRE", "author");
+    	commandMessage("NUCLEO F446RE", "Rudolf Libal");
         return;
     }
     //button BUTTON?
@@ -700,35 +700,22 @@ void main(void)
 	//  TFT_V2_ShiedInit();
 	//  BSP_LCD_Init();
 
-	// Nucleo User LED init
+	// Nucleo User LED init //unfortunately this seems to break the LCD controls
 	//BSP_LED_Init( LED2 );
-	// and usage
 
-	//  BSP_LED_Off( LED2 );
-	//  HAL_Delay( 1000 );
-	//  BSP_LED_On( LED2 );
-	//  HAL_Delay( 1000 );
-	//  BSP_LED_Toggle( LED2 );
+	// Nucleo user button init
+	//BSP_PB_Init( BUTTON_USER, BUTTON_MODE_GPIO );
 
-		// Nucleo user button init
-	//  BSP_PB_Init( BUTTON_USER, BUTTON_MODE_GPIO );
-
-		// Adafruit joystick init
+	// Adafruit joystick init
 	//  (void)BSP_JOY_Init();
 
-    //
     // Adafruit LCD init
     BSP_LCD_Init();
-    uiDispCentX = BSP_LCD_GetXSize()/2;
-    uiDispCentY = BSP_LCD_GetYSize()/2;
 
-    //
-    // some drawings
+    // default values
     BSP_LCD_Clear( LCD_COLOR_WHITE );
     BSP_LCD_SetFont( &Font8 );
     BSP_LCD_SetTextColor( LCD_COLOR_BLACK );
-    //BSP_LCD_SetFont( &Font8 );
-    //BSP_LCD_SetTextColor( LCD_COLOR_BLACK );
     //BSP_LCD_DisplayStringAtLine( 1, (uint8_t *)" Welcome to Nucleo! " );
 
     while(1) // main loop
