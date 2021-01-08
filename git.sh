@@ -1,4 +1,4 @@
-zip hw09.zip -r final_project;
+zip hw09.zip -r final_project README.md;
 git pull;
 git add final_project;
 git add hw09.zip;
