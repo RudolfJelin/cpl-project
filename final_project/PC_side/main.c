@@ -79,21 +79,19 @@ void printMenu(char* selection)
 	{
 		printf("%s\n", menu[i]);
 	}
-//	printf("Selection: "); //no newline on purpose
-//	scanf("%s[0]", selection); // scanning using '%c' is not possible
+	//	printf("Selection: "); //no newline on purpose
+	//	scanf("%s[0]", selection); // scanning using '%c' is not possible
 
 	printSelection(NULL);
 }
 
 void send_string(char * strOut)
 {
-	printf("Preparing to send '%s'\n", strOut);
-
 	sprintf(chBuffOut, "%s\r\n", strOut);
 	char * hex = chBuffOut;
 	while(*hex){
 		serial_write(hSerial, hex, 1);
-		usleep(1000*80); // this delay is crucial. 
+		usleep(1000*50);
 		//For some reason, the serial connection will otherwise skip bytes
 		//It seems that the evaluation on nucleo side is taking more than in the other projects
 		hex++;
@@ -129,7 +127,7 @@ void send_file()
 	//LI_print(firstItem);
 	
 	listItem * pTmp = firstItem;
-	while(pTmp != NULL)
+	while(pTmp != NULL || !quit) // also can quit
 	{
 		
 		pTmp = skip_labels(pTmp);
@@ -217,8 +215,6 @@ void send_file()
 		send_string(pTmp->pLine);
 		pTmp = pTmp->pNext;
 	}
-	
-	printf("pTmp: %p\n", pTmp);
 	printf("End of processing file\n");	 
 	LI_remove(firstItem);
 	fflush(stdout);
@@ -277,6 +273,10 @@ void* comm(void *v)
 						{
 							printf("Unknown command\n");
 						}
+						else if(strstr(pSerialData->chCmdBuff, "NUCLEO") == pSerialData->chCmdBuff)
+						{
+							printf("Identification: '%s'\n", pSerialData->chCmdBuff);
+						}
 						else if(strstr(pSerialData->chCmdBuff, "EVENT:JOY_DOWN") == pSerialData->chCmdBuff)
 						{
 							joy_state = JOY_DOWN;
@@ -284,7 +284,7 @@ void* comm(void *v)
 								sendingFile = true;
 								printf("Nucleo requested LCD clear\n");
 								send_string("DRAW:CLEAR 9");
-								usleep(1000 * 200);
+								usleep(1000 * 20);
 								sendingFile = false;
 							}
 						}
@@ -295,7 +295,7 @@ void* comm(void *v)
 								sendingFile = true;
 								printf("Nucleo requested resend\n");
 								pthread_cond_signal(&condvar);
-								usleep(1000 * 200);
+								usleep(1000 * 20);
 								sendingFile = false;
 							}
 						}
@@ -465,7 +465,8 @@ int main(int argc, char *argv[]) {
 
 			case 'c': // sends a string from stdin, without thread
 				{	
-					if(sendingFile == false){
+					if(sendingFile == false)
+					{
 						sendingFile = true;
 						printf("Enter command: ");
 						char command[BUFFER_SIZE];
@@ -474,12 +475,17 @@ int main(int argc, char *argv[]) {
 						usleep(1000*100);
 						sendingFile = false;
 					}
+					else
+					{
+						fprintf(stderr, "A file is being sent. Please wait.");
+					}
 					break;
 				}
 
 			case 'e':
 				{	// waits for while condition to end loop
 					quit = true;
+					usleep(1000*1000);//wait for thread to loop over and quit
 					break;
 				}
 			case '\n': // does nothing

@@ -1,9 +1,7 @@
 // Intro 
 #label:LabelIntro://testing comments
-#include:intro.txt:
-#wait_for_joystick:8000:8
-#if:JOY_LEFT:goto:LabelIntro:
-#else:goto:LabelOutro:
+
+DRAW:LINE 12,12,64,67
 
 #label:LabelOutro:
 #exit:
